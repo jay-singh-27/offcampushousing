@@ -18,6 +18,7 @@ import ProfileScreen from '../screens/main/ProfileScreen';
 import ListingDetailsScreen from '../screens/main/ListingDetailsScreen';
 import CreateListingScreen from '../screens/main/CreateListingScreen';
 import PaymentScreen from '../screens/main/PaymentScreen';
+import WebPaymentScreen from '../screens/main/WebPaymentScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -75,6 +76,7 @@ export const AppNavigator = () => {
           <Stack.Screen name="ListingDetails" component={ListingDetailsScreen} />
           <Stack.Screen name="CreateListing" component={CreateListingScreen} />
           <Stack.Screen name="Payment" component={PaymentScreen} />
+          <Stack.Screen name="WebPayment" component={WebPaymentScreen} />
         </>
       ) : (
         <>

@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "scheme": "offcampus",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -23,14 +24,24 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "com.offcampushousing.app"
+      "package": "com.offcampushousing.app",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "offcampus"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-location",
-      "@stripe/stripe-react-native"
+      "expo-location"
     ]
   }
 }

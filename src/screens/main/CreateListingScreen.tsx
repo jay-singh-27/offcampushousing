@@ -21,6 +21,7 @@ import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 import { PickerModal } from '../../components/common/PickerModal';
 import { ImagePicker } from '../../components/forms/ImagePicker';
 import { AmenitiesSelector } from '../../components/forms/AmenitiesSelector';
+import { HybridPaymentService } from '../../services/HybridPaymentService';
 import { mockColleges } from '../../utils/mockData';
 
 type CreateListingScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CreateListing'>;
@@ -135,11 +136,25 @@ const CreateListingScreen: React.FC = () => {
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    // Navigate to payment screen
-    navigation.navigate('Payment', {
+    // Show Stripe payment dialog
+    const result = await HybridPaymentService.showStripePaymentDialog({
       listingId: 'new',
       amount: LISTING_FEE,
+      description: 'OffCampus Housing - Listing Fee',
     });
+    
+    if (result.success) {
+      // Payment flow initiated successfully
+      // The user will be redirected to Stripe Checkout in their browser
+      // Return handling will be done via deep links
+      Alert.alert(
+        'Redirecting to Payment',
+        'You will now be redirected to Stripe for secure payment processing. Please complete your payment and return to the app.',
+        [{ text: 'OK' }]
+      );
+    } else if (result.method !== 'cancelled') {
+      Alert.alert('Error', 'Failed to start payment process. Please try again.');
+    }
   };
 
   const handleGoBack = () => {

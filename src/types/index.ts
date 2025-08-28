@@ -58,6 +58,7 @@ export type RootStackParamList = {
   ListingDetails: { listingId: string };
   CreateListing: undefined;
   Payment: { listingId: string; amount: number };
+  WebPayment: { listingId: string; amount: number };
 };
 
 export type MainTabParamList = {
