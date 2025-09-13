@@ -30,7 +30,13 @@
     },
     "plugins": [
       "expo-location",
-      "@stripe/stripe-react-native"
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.offcampushousing.app",
+          "enableGooglePay": false
+        }
+      ]
     ]
   }
 }
