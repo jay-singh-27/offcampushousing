@@ -29,9 +29,19 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
   style,
   textStyle,
 }) => {
-  const getButtonStyle = () => {
-    const baseStyle = [styles.button, styles[size]];
+  const getButtonStyle = (): ViewStyle[] => {
+    const baseStyle: ViewStyle[] = [styles.button];
     
+    // Add size styles
+    if (size === 'small') {
+      baseStyle.push(styles.small);
+    } else if (size === 'medium') {
+      baseStyle.push(styles.medium);
+    } else if (size === 'large') {
+      baseStyle.push(styles.large);
+    }
+    
+    // Add variant styles
     if (variant === 'primary') {
       baseStyle.push(styles.primaryButton);
     } else if (variant === 'secondary') {
@@ -47,9 +57,19 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
     return baseStyle;
   };
 
-  const getTextStyle = () => {
-    const baseStyle = [styles.text, styles[`${size}Text`]];
+  const getTextStyle = (): TextStyle[] => {
+    const baseStyle: TextStyle[] = [styles.text];
     
+    // Add size text styles
+    if (size === 'small') {
+      baseStyle.push(styles.smallText);
+    } else if (size === 'medium') {
+      baseStyle.push(styles.mediumText);
+    } else if (size === 'large') {
+      baseStyle.push(styles.largeText);
+    }
+    
+    // Add variant text styles
     if (variant === 'primary') {
       baseStyle.push(styles.primaryText);
     } else if (variant === 'secondary') {
@@ -67,7 +87,7 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
 
   return (
     <TouchableOpacity
-      style={[...getButtonStyle(), style]}
+      style={[getButtonStyle(), style]}
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.7}
@@ -78,7 +98,7 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
           size="small" 
         />
       ) : (
-        <Text style={[...getTextStyle(), textStyle]}>{title}</Text>
+        <Text style={[getTextStyle(), textStyle]}>{title}</Text>
       )}
     </TouchableOpacity>
   );

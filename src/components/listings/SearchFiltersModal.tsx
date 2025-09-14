@@ -14,6 +14,8 @@ import { SearchFilters } from '../../types';
 import { CustomInput } from '../common/CustomInput';
 import { CustomButton } from '../common/CustomButton';
 import { PickerModal } from '../common/PickerModal';
+import CollegeSearchInput from '../common/CollegeSearchInput';
+import { College } from '../../services/CollegeSearchService';
 
 interface SearchFiltersModalProps {
   visible: boolean;
@@ -32,6 +34,7 @@ export const SearchFiltersModal: React.FC<SearchFiltersModalProps> = ({
 }) => {
   const [localFilters, setLocalFilters] = useState<SearchFilters>(filters);
   const [showCollegePicker, setShowCollegePicker] = useState(false);
+  const [collegeSearchText, setCollegeSearchText] = useState(filters.college || '');
 
   const updateFilter = (key: keyof SearchFilters, value: any) => {
     setLocalFilters(prev => ({ ...prev, [key]: value }));
@@ -93,18 +96,16 @@ export const SearchFiltersModal: React.FC<SearchFiltersModalProps> = ({
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>College/University</Text>
-            <TouchableOpacity
-              style={styles.pickerButton}
-              onPress={() => setShowCollegePicker(true)}
-            >
-              <Text style={[
-                styles.pickerButtonText,
-                !localFilters.college && styles.pickerPlaceholder
-              ]}>
-                {localFilters.college || 'Select a college'}
-              </Text>
-              <Ionicons name="chevron-down" size={20} color="#666666" />
-            </TouchableOpacity>
+            <CollegeSearchInput
+              value={collegeSearchText}
+              onChangeText={setCollegeSearchText}
+              onCollegeSelect={(college: College) => {
+                updateFilter('college', college.name);
+                setCollegeSearchText(college.name);
+              }}
+              placeholder="Search for colleges and universities..."
+              showPopularOnFocus={true}
+            />
           </View>
 
           <View style={styles.section}>

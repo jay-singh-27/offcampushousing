@@ -15,6 +15,7 @@ import { RootStackParamList, Listing, SearchFilters } from '../../types';
 import { SearchBar } from '../../components/common/SearchBar';
 import { ListingCard } from '../../components/listings/ListingCard';
 import { SearchFiltersModal } from '../../components/listings/SearchFiltersModal';
+import { College } from '../../services/CollegeSearchService';
 import { mockListings, mockColleges } from '../../utils/mockData';
 
 type SearchScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -114,6 +115,11 @@ const SearchScreen: React.FC = () => {
     setSearchQuery('');
   };
 
+  const handleCollegeSelect = (college: College) => {
+    setFilters(prev => ({ ...prev, college: college.name, location: `${college.city}, ${college.stateCode}` }));
+    setSearchQuery(college.name);
+  };
+
   const navigateToListingDetails = (listingId: string) => {
     navigation.navigate('ListingDetails', { listingId });
   };
@@ -151,6 +157,7 @@ const SearchScreen: React.FC = () => {
           placeholder="Search by city, college, or keywords..."
           showFilter
           onFilterPress={() => setShowFilters(true)}
+          onCollegeSelect={handleCollegeSelect}
         />
       </View>
 

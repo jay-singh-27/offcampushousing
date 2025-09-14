@@ -6,86 +6,81 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
-  TextInputProps,
   Animated,
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CollegeSearchService, { College } from '../../services/CollegeSearchService';
 
-interface SearchBarProps extends TextInputProps {
-  onFocus?: () => void;
-  showFilter?: boolean;
-  onFilterPress?: () => void;
-  onCollegeSelect?: (college: College) => void;
+interface CollegeSearchInputProps {
+  value: string;
+  onChangeText: (text: string) => void;
+  onCollegeSelect: (college: College) => void;
+  placeholder?: string;
+  style?: any;
+  showPopularOnFocus?: boolean;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({
-  onFocus,
-  showFilter = false,
-  onFilterPress,
-  onCollegeSelect,
+const CollegeSearchInput: React.FC<CollegeSearchInputProps> = ({
   value,
   onChangeText,
-  ...textInputProps
+  onCollegeSelect,
+  placeholder = "Search colleges and universities...",
+  style,
+  showPopularOnFocus = true,
 }) => {
   const [suggestions, setSuggestions] = useState<College[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [popularColleges, setPopularColleges] = useState<College[]>([]);
   
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const animatedHeight = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Load popular colleges on mount
+    loadPopularColleges();
+  }, []);
+
+  useEffect(() => {
+    // Animate suggestions container
     Animated.timing(animatedHeight, {
-      toValue: showSuggestions ? Math.min(suggestions.length * 50, 200) : 0,
+      toValue: showSuggestions ? Math.min(suggestions.length * 60, 240) : 0,
       duration: 200,
       useNativeDriver: false,
     }).start();
   }, [showSuggestions, suggestions.length]);
 
-  const searchColleges = async (query: string) => {
-    if (!query || query.length < 2) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
+  const loadPopularColleges = async () => {
+    try {
+      const colleges = await CollegeSearchService.getPopularColleges();
+      setPopularColleges(colleges);
+    } catch (error) {
+      console.error('Error loading popular colleges:', error);
     }
+  };
 
-    // Only search if the query looks like it could be a college name
-    const collegeKeywords = ['university', 'college', 'institute', 'tech', 'state', 'harvard', 'mit', 'stanford', 'berkeley', 'ucla', 'nyu', 'columbia', 'chicago', 'northwestern', 'boston', 'usc', 'penn'];
-    const queryLower = query.toLowerCase();
-    const mightBeCollege = collegeKeywords.some(keyword => 
-      queryLower.includes(keyword) || keyword.includes(queryLower)
-    );
-
-    if (!mightBeCollege && query.length < 4) {
-      setSuggestions([]);
-      setShowSuggestions(false);
+  const searchColleges = async (query: string) => {
+    if (query.length < 2) {
+      setSuggestions(showPopularOnFocus ? popularColleges.slice(0, 8) : []);
       return;
     }
 
     setLoading(true);
     
     try {
-      const result = await CollegeSearchService.searchColleges(query, 4);
-      if (result.colleges.length > 0) {
-        setSuggestions(result.colleges);
-        setShowSuggestions(true);
-      } else {
-        setSuggestions([]);
-        setShowSuggestions(false);
-      }
+      const result = await CollegeSearchService.searchColleges(query, 8);
+      setSuggestions(result.colleges);
     } catch (error) {
       console.error('Error searching colleges:', error);
       setSuggestions([]);
-      setShowSuggestions(false);
     } finally {
       setLoading(false);
     }
   };
 
   const handleTextChange = (text: string) => {
-    onChangeText?.(text);
+    onChangeText(text);
     
     // Clear existing timeout
     if (searchTimeoutRef.current) {
@@ -95,11 +90,14 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     // Set new timeout for search
     searchTimeoutRef.current = setTimeout(() => {
       searchColleges(text);
-    }, 300);
+    }, 300); // Debounce search by 300ms
   };
 
   const handleFocus = () => {
-    onFocus?.();
+    setShowSuggestions(true);
+    if (value.length < 2 && showPopularOnFocus) {
+      setSuggestions(popularColleges.slice(0, 8));
+    }
   };
 
   const handleBlur = () => {
@@ -110,8 +108,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   const handleCollegeSelect = (college: College) => {
-    onCollegeSelect?.(college);
-    onChangeText?.(college.name);
+    onCollegeSelect(college);
+    onChangeText(college.name);
     setShowSuggestions(false);
   };
 
@@ -123,7 +121,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     >
       <View style={styles.suggestionContent}>
         <View style={styles.suggestionIcon}>
-          <Ionicons name="school-outline" size={14} color="#007AFF" />
+          <Ionicons name="school-outline" size={20} color="#007AFF" />
         </View>
         <View style={styles.suggestionText}>
           <Text style={styles.collegeName} numberOfLines={1}>
@@ -133,32 +131,41 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             {item.city}, {item.stateCode}
           </Text>
         </View>
+        {item.type && (
+          <View style={[
+            styles.typeChip, 
+            { backgroundColor: item.type === 'private' ? '#FF6B6B' : '#4ECDC4' }
+          ]}>
+            <Text style={styles.typeText}>{item.type}</Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.searchContainer}>
+    <View style={[styles.container, style]}>
+      <View style={styles.inputContainer}>
         <Ionicons name="search" size={20} color="#666666" style={styles.searchIcon} />
         <TextInput
-          style={styles.input}
-          placeholderTextColor="#999999"
-          onFocus={handleFocus}
-          onBlur={handleBlur}
+          style={styles.textInput}
           value={value}
           onChangeText={handleTextChange}
-          {...textInputProps}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          placeholder={placeholder}
+          placeholderTextColor="#999999"
+          autoCapitalize="words"
+          autoCorrect={false}
         />
         {loading && (
           <ActivityIndicator size="small" color="#007AFF" style={styles.loadingIcon} />
         )}
-        {value && value.length > 0 && (
+        {value.length > 0 && !loading && (
           <TouchableOpacity
             onPress={() => {
-              onChangeText?.('');
-              setSuggestions([]);
-              setShowSuggestions(false);
+              onChangeText('');
+              setSuggestions(showPopularOnFocus ? popularColleges.slice(0, 8) : []);
             }}
             style={styles.clearButton}
           >
@@ -166,15 +173,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           </TouchableOpacity>
         )}
       </View>
-      
-      {showFilter && (
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={onFilterPress}
-        >
-          <Ionicons name="options" size={20} color="#007AFF" />
-        </TouchableOpacity>
-      )}
 
       {showSuggestions && (
         <Animated.View style={[styles.suggestionsContainer, { height: animatedHeight }]}>
@@ -184,6 +182,24 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            ListEmptyComponent={
+              loading ? null : (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>
+                    {value.length < 2 
+                      ? "Start typing to search colleges..." 
+                      : "No colleges found"}
+                  </Text>
+                </View>
+              )
+            }
+            ListHeaderComponent={
+              value.length < 2 && popularColleges.length > 0 ? (
+                <View style={styles.headerContainer}>
+                  <Text style={styles.headerText}>Popular Colleges</Text>
+                </View>
+              ) : null
+            }
           />
         </Animated.View>
       )}
@@ -193,14 +209,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
     position: 'relative',
     zIndex: 1000,
   },
-  searchContainer: {
-    flex: 1,
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8F8F8',
@@ -211,9 +223,9 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: 12,
   },
-  input: {
+  textInput: {
     flex: 1,
     fontSize: 16,
     color: '#1A1A1A',
@@ -224,40 +236,43 @@ const styles = StyleSheet.create({
   clearButton: {
     marginLeft: 8,
   },
-  filterButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#F0F8FF',
-    borderWidth: 1,
-    borderColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   suggestionsContainer: {
     position: 'absolute',
     top: '100%',
     left: 0,
-    right: 56, // Account for filter button width + gap
+    right: 0,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E0E0E0',
+    borderTopWidth: 0,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowRadius: 8,
+    elevation: 8,
     overflow: 'hidden',
     zIndex: 1001,
-    marginTop: 4,
+  },
+  headerContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  headerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666666',
   },
   suggestionItem: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F5F5F5',
   },
@@ -266,19 +281,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   suggestionIcon: {
-    marginRight: 8,
+    marginRight: 12,
   },
   suggestionText: {
     flex: 1,
   },
   collegeName: {
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '600',
     color: '#1A1A1A',
-    marginBottom: 1,
+    marginBottom: 2,
   },
   collegeLocation: {
-    fontSize: 11,
+    fontSize: 14,
     color: '#666666',
   },
+  typeChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  typeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  emptyState: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#999999',
+    textAlign: 'center',
+  },
 });
+
+export default CollegeSearchInput;

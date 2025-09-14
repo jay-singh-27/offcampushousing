@@ -1,7 +1,7 @@
 import axios from 'axios';
+import { BACKEND_CONFIG } from '../config/stripe';
 
-// Replace with your actual backend URL
-const API_BASE_URL = 'https://your-backend-api.com/api';
+const API_BASE_URL = BACKEND_CONFIG.baseUrl;
 
 interface PaymentIntentRequest {
   amount: number; // Amount in cents
@@ -36,21 +36,22 @@ export class PaymentService {
   }
 
   static async createPaymentIntent(request: PaymentIntentRequest): Promise<PaymentIntentResponse> {
-    // For development/demo purposes, return a mock response
-    // In production, this should make an actual API call to your backend
+    // For development/demo purposes, return a properly formatted mock response
+    // This matches Stripe's client secret format: pi_xxx_secret_xxx
     return new Promise((resolve) => {
       setTimeout(() => {
+        const timestamp = Date.now();
         resolve({
-          client_secret: `pi_mock_${Date.now()}_secret_mock`,
-          id: `pi_mock_${Date.now()}`,
+          client_secret: `pi_${timestamp}_secret_${timestamp}mock`,
+          id: `pi_${timestamp}`,
           amount: request.amount,
           currency: request.currency,
           status: 'requires_payment_method',
         });
-      }, 1000);
+      }, 500);
     });
 
-    // Uncomment this for actual API integration:
+    // For actual Stripe integration, uncomment this and set up your backend:
     // return this.makeRequest<PaymentIntentResponse>('/payment/create-intent', request);
   }
 

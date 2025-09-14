@@ -142,6 +142,8 @@ const RegisterScreen: React.FC = () => {
               onChangeText={(value) => updateFormData('password', value)}
               placeholder="Create a password"
               secureTextEntry
+              textContentType="none"
+              autoComplete="off"
               style={styles.input}
             />
 
@@ -151,6 +153,8 @@ const RegisterScreen: React.FC = () => {
               onChangeText={(value) => updateFormData('confirmPassword', value)}
               placeholder="Confirm your password"
               secureTextEntry
+              textContentType="none"
+              autoComplete="off"
               style={styles.input}
             />
 
