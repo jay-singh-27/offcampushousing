@@ -1,0 +1,15 @@
+# Copy this to .env and fill in your actual values
+
+# Stripe Configuration
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
+STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key_here
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
+
+# Supabase Configuration
+SUPABASE_URL=https://aymygljcvqezjsifyndu.supabase.co
+SUPABASE_SERVICE_KEY=your_supabase_service_role_key_here
+
+# App Configuration
+FRONTEND_URL=http://localhost:19006
+NODE_ENV=development
+PORT=3000
