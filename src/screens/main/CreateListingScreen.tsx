@@ -13,6 +13,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../contexts/AuthContext';
 import { RootStackParamList, Listing } from '../../types';
 import { CustomInput } from '../../components/common/CustomInput';
@@ -41,7 +42,9 @@ interface ListingFormData {
   amenities: string[];
 }
 
-const LISTING_FEE = 25; // $25 to post a listing
+import { PRICING } from '../../config/stripe';
+
+const LISTING_FEE = PRICING.LISTING_FEE; // $100 to post a listing (matches Stripe product)
 
 const CreateListingScreen: React.FC = () => {
   const navigation = useNavigation<CreateListingScreenNavigationProp>();
@@ -135,11 +138,20 @@ const CreateListingScreen: React.FC = () => {
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    // Navigate to payment screen
-    navigation.navigate('Payment', {
-      listingId: 'new',
-      amount: LISTING_FEE,
-    });
+    try {
+      // Store listing data in AsyncStorage for use after payment
+      await AsyncStorage.setItem('pendingListingData', JSON.stringify(formData));
+      console.log('📝 Stored listing data for payment:', formData);
+      
+      // Navigate to payment screen
+      navigation.navigate('Payment', {
+        listingId: 'new',
+        amount: LISTING_FEE,
+      });
+    } catch (error) {
+      console.error('Error storing listing data:', error);
+      Alert.alert('Error', 'Failed to prepare listing data. Please try again.');
+    }
   };
 
   const handleGoBack = () => {

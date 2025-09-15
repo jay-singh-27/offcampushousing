@@ -40,7 +40,7 @@ export class PaymentService {
 
   static async createPaymentIntent(request: PaymentIntentRequest): Promise<PaymentIntentResponse> {
     try {
-      // Get current user
+      // Get current user from Supabase
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('User not authenticated');
@@ -79,7 +79,7 @@ export class PaymentService {
 
   static async confirmPayment(paymentIntentId: string): Promise<{ success: boolean }> {
     try {
-      // Get current user
+      // Get current user from Supabase
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('User not authenticated');

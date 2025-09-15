@@ -5,15 +5,13 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
+import { STRIPE_CONFIG } from './src/config/stripe';
 
 const Stack = createNativeStackNavigator();
 
-// Replace with your actual Stripe publishable key
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_your_stripe_publishable_key_here';
-
 export default function App() {
   return (
-    <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
+    <StripeProvider publishableKey={STRIPE_CONFIG.publishableKey}>
       <AuthProvider>
         <NavigationContainer>
           <AppNavigator />

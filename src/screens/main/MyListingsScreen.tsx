@@ -17,6 +17,7 @@ import { RootStackParamList, Listing } from '../../types';
 import { CustomButton } from '../../components/common/CustomButton';
 import { ListingCard } from '../../components/listings/ListingCard';
 import { mockListings } from '../../utils/mockData';
+import { PropertyService } from '../../services/PropertyService';
 
 type MyListingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -41,13 +42,39 @@ const MyListingsScreen: React.FC = () => {
   const loadMyListings = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual API call to get user's listings
-      // Filter mock listings by current user (landlord)
-      const userListings = mockListings.filter(listing => listing.landlordId === user?.id);
+      console.log('📋 Loading user listings from Supabase...');
+      
+      // Load real listings from Supabase
+      const properties = await PropertyService.getUserProperties();
+      console.log('✅ Loaded', properties.length, 'listings');
+      
+      // Convert Property[] to Listing[] format
+      const userListings: Listing[] = properties.map(property => ({
+        id: property.id,
+        title: property.title,
+        description: property.description,
+        rent: property.rent,
+        bedrooms: property.bedrooms,
+        bathrooms: property.bathrooms,
+        address: property.address,
+        city: property.city,
+        state: property.state,
+        zipCode: property.zip_code,
+        college: '', // TODO: Add college name lookup
+        landlordId: property.landlord_id,
+        images: property.images,
+        amenities: property.amenities,
+        available: property.available,
+        availableDate: property.available_from,
+        featured: false, // Default value
+        createdAt: property.created_at,
+        updatedAt: property.updated_at,
+      }));
+      
       setListings(userListings);
     } catch (error) {
-      console.error('Error loading listings:', error);
-      Alert.alert('Error', 'Failed to load your listings');
+      console.error('❌ Error loading listings:', error);
+      Alert.alert('Error', 'Failed to load your listings. Please try again.');
     } finally {
       setLoading(false);
     }

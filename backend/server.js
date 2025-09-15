@@ -22,6 +22,60 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || '*',
   credentials: true
 }));
+
+// Webhook endpoint MUST come before express.json() middleware
+app.post('/api/webhooks/stripe', express.raw({type: 'application/json'}), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  console.log('Webhook event received:', event.type);
+
+  // Handle the event
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      const paymentIntent = event.data.object;
+      console.log('Payment succeeded:', paymentIntent.id);
+      
+      // Update payment status in database
+      await supabase
+        .from('payment_intents')
+        .update({ 
+          status: 'succeeded',
+          updated_at: new Date().toISOString()
+        })
+        .eq('payment_intent_id', paymentIntent.id);
+      break;
+
+    case 'payment_intent.payment_failed':
+      const failedPayment = event.data.object;
+      console.log('Payment failed:', failedPayment.id);
+      
+      await supabase
+        .from('payment_intents')
+        .update({ 
+          status: 'failed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('payment_intent_id', failedPayment.id);
+      break;
+
+    default:
+      console.log(`Unhandled event type ${event.type}`);
+  }
+
+  res.json({received: true});
+});
+
+// JSON middleware for all other routes
 app.use(express.json());
 
 // Rate limiting
@@ -55,7 +109,7 @@ app.post('/api/payment/create-intent', async (req, res) => {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount), // Ensure it's an integer (cents)
       currency,
-      description: description || 'OffCampus Housing - Listing Fee',
+      description: description || 'OffCampus Housing - Landlord Listing Fee',
       metadata: {
         userId,
         listingTitle: listingData?.title || '',
@@ -211,55 +265,6 @@ app.get('/api/payment/history/:userId', async (req, res) => {
   }
 });
 
-// Webhook endpoint for Stripe events
-app.post('/api/webhooks/stripe', express.raw({type: 'application/json'}), async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-  } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  // Handle the event
-  switch (event.type) {
-    case 'payment_intent.succeeded':
-      const paymentIntent = event.data.object;
-      console.log('Payment succeeded:', paymentIntent.id);
-      
-      // Update payment status in database
-      await supabase
-        .from('payment_intents')
-        .update({ 
-          status: 'succeeded',
-          updated_at: new Date().toISOString()
-        })
-        .eq('payment_intent_id', paymentIntent.id);
-      break;
-
-    case 'payment_intent.payment_failed':
-      const failedPayment = event.data.object;
-      console.log('Payment failed:', failedPayment.id);
-      
-      await supabase
-        .from('payment_intents')
-        .update({ 
-          status: 'failed',
-          updated_at: new Date().toISOString()
-        })
-        .eq('payment_intent_id', failedPayment.id);
-      break;
-
-    default:
-      console.log(`Unhandled event type ${event.type}`);
-  }
-
-  res.json({received: true});
-});
 
 // Error handling middleware
 app.use((error, req, res, next) => {
