@@ -16,7 +16,7 @@ import { SearchBar } from '../../components/common/SearchBar';
 import { ListingCard } from '../../components/listings/ListingCard';
 import { SearchFiltersModal } from '../../components/listings/SearchFiltersModal';
 import { College } from '../../services/CollegeSearchService';
-import { mockListings, mockColleges } from '../../utils/mockData';
+import { PropertyService } from '../../services/PropertyService';
 
 type SearchScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -43,10 +43,39 @@ const SearchScreen: React.FC = () => {
   const loadListings = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual API call
-      setListings(mockListings);
+      console.log('🔍 Loading listings for search from Supabase...');
+      
+      // Load real listings from Supabase
+      const properties = await PropertyService.getAllProperties();
+      console.log('✅ Loaded', properties.length, 'listings for search');
+      
+      // Convert Property[] to Listing[] format
+      const allListings: Listing[] = properties.map(property => ({
+        id: property.id,
+        title: property.title,
+        description: property.description,
+        rent: property.rent,
+        bedrooms: property.bedrooms,
+        bathrooms: property.bathrooms,
+        address: property.address,
+        city: property.city,
+        state: property.state,
+        zipCode: property.zip_code,
+        college: property.college || '',
+        landlordId: property.landlord_id,
+        images: property.images,
+        amenities: property.amenities,
+        available: property.available,
+        availableDate: property.available_from,
+        featured: false, // Default value
+        createdAt: property.created_at,
+        updatedAt: property.updated_at,
+      }));
+      
+      setListings(allListings);
     } catch (error) {
-      console.error('Error loading listings:', error);
+      console.error('❌ Error loading listings for search:', error);
+      setListings([]);
     } finally {
       setLoading(false);
     }
@@ -210,7 +239,13 @@ const SearchScreen: React.FC = () => {
         filters={filters}
         onApply={handleFiltersApply}
         onClose={() => setShowFilters(false)}
-        colleges={mockColleges}
+        colleges={[
+          'Harvard University',
+          'Massachusetts Institute of Technology',
+          'Stanford University',
+          'University of California, Berkeley',
+          'University of California, Los Angeles'
+        ]}
       />
     </SafeAreaView>
   );

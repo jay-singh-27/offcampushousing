@@ -17,6 +17,8 @@ import { RootStackParamList } from '../../types';
 import { CustomButton } from '../../components/common/CustomButton';
 import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 import { PaymentService } from '../../services/PaymentService';
+import { PropertyService } from '../../services/PropertyService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type PaymentScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Payment'>;
 type PaymentScreenRouteProp = RouteProp<RootStackParamList, 'Payment'>;
@@ -95,8 +97,41 @@ const PaymentScreen: React.FC = () => {
 
   const handlePaymentSuccess = async () => {
     try {
-      // TODO: Create the listing in the backend
-      // For now, simulate success
+      console.log('💰 Payment successful, creating listing...');
+      
+      // Get the listing data from AsyncStorage (stored when user filled the form)
+      const listingDataJson = await AsyncStorage.getItem('pendingListingData');
+      if (!listingDataJson) {
+        throw new Error('No listing data found. Please go back and fill the form again.');
+      }
+
+      const listingData = JSON.parse(listingDataJson);
+      console.log('📋 Retrieved listing data:', listingData);
+
+      // Create the property in Supabase
+      const property = await PropertyService.createProperty({
+        title: listingData.title,
+        description: listingData.description,
+        rent: parseFloat(listingData.rent),
+        bedrooms: parseInt(listingData.bedrooms),
+        bathrooms: parseFloat(listingData.bathrooms),
+        address: listingData.address,
+        city: listingData.city,
+        state: listingData.state,
+        zip_code: listingData.zipCode,
+        images: listingData.images || [],
+        amenities: listingData.amenities || [],
+        available_from: listingData.availableDate,
+        lease_term: '12 months', // Default value
+        utilities_included: false,
+        pets_allowed: false,
+        parking_included: false,
+      });
+
+      console.log('🏠 Listing created successfully:', property.id);
+      
+      // Clear the pending listing data
+      await AsyncStorage.removeItem('pendingListingData');
       
       Alert.alert(
         'Payment Successful! 🎉',
@@ -143,7 +178,7 @@ const PaymentScreen: React.FC = () => {
 
           <View style={styles.orderSummary}>
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Property Listing (30 days)</Text>
+              <Text style={styles.summaryLabel}>Landlord Listing Fee (30 days)</Text>
               <Text style={styles.summaryValue}>${amount}</Text>
             </View>
             <View style={styles.summaryDivider} />

@@ -1,0 +1,24 @@
+# Test Environment Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: environment-config
+  namespace: offcampus-housing-test
+data:
+  ENVIRONMENT: "test"
+  REPLICAS: "1"
+  DOMAIN: "api-test.offcampushousing.app"
+  NODE_ENV: "development"
+  LOG_LEVEL: "debug"
+  
+  # Resource limits for test environment
+  CPU_REQUEST: "50m"
+  CPU_LIMIT: "200m"
+  MEMORY_REQUEST: "64Mi"
+  MEMORY_LIMIT: "256Mi"
+  
+  # HPA settings for test
+  MIN_REPLICAS: "1"
+  MAX_REPLICAS: "3"
+  TARGET_CPU: "80"
+  TARGET_MEMORY: "85"

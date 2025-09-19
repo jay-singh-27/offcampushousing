@@ -17,10 +17,10 @@ import { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
 import { useAuth } from '../../contexts/AuthContext';
-import { RootStackParamList, Listing } from '../../types';
+import { RootStackParamList, Listing, Property } from '../../types';
 import { CustomButton } from '../../components/common/CustomButton';
 import { LoadingOverlay } from '../../components/common/LoadingOverlay';
-import { mockListings } from '../../utils/mockData';
+import { PropertyService } from '../../services/PropertyService';
 
 type ListingDetailsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ListingDetails'>;
 type ListingDetailsScreenRouteProp = RouteProp<RootStackParamList, 'ListingDetails'>;
@@ -42,15 +42,51 @@ const ListingDetailsScreen: React.FC = () => {
     loadListingDetails();
   }, [listingId]);
 
+  const convertPropertyToListing = (property: Property): Listing => {
+    return {
+      id: property.id,
+      title: property.title,
+      rent: property.rent,
+      bedrooms: property.bedrooms,
+      bathrooms: property.bathrooms,
+      address: property.address,
+      city: property.city,
+      state: property.state,
+      zipCode: property.zip_code,
+      college: property.college || '',
+      landlordId: property.landlord_id,
+      description: property.description,
+      images: property.images || [],
+      amenities: property.amenities || [],
+      availableDate: property.available_from,
+      available: property.available ?? true,
+      coordinates: property.coordinates || undefined,
+      createdAt: property.created_at,
+      updatedAt: property.updated_at,
+      featured: false, // Default value
+    };
+  };
+
   const loadListingDetails = async () => {
     try {
       setIsLoading(true);
-      // TODO: Replace with actual API call
-      const foundListing = mockListings.find(l => l.id === listingId);
-      setListing(foundListing || null);
+      console.log('🔍 Loading listing details for ID:', listingId);
+      
+      // Get specific property by ID
+      const foundProperty = await PropertyService.getPropertyById(listingId);
+      
+      if (foundProperty) {
+        console.log('✅ Found listing:', foundProperty.title);
+        const listing = convertPropertyToListing(foundProperty);
+        setListing(listing);
+      } else {
+        console.log('❌ Listing not found for ID:', listingId);
+        setListing(null);
+      }
     } catch (error) {
-      console.error('Error loading listing details:', error);
+      console.error('❌ Error loading listing details:', error);
       Alert.alert('Error', 'Failed to load listing details');
+      setListing(null);
     } finally {
       setIsLoading(false);
     }

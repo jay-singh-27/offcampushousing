@@ -1,0 +1,24 @@
+# Production Environment Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: environment-config
+  namespace: offcampus-housing-prod
+data:
+  ENVIRONMENT: "prod"
+  REPLICAS: "3"
+  DOMAIN: "api.offcampushousing.app"
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  
+  # Resource limits for production environment
+  CPU_REQUEST: "100m"
+  CPU_LIMIT: "500m"
+  MEMORY_REQUEST: "128Mi"
+  MEMORY_LIMIT: "512Mi"
+  
+  # HPA settings for production
+  MIN_REPLICAS: "3"
+  MAX_REPLICAS: "10"
+  TARGET_CPU: "70"
+  TARGET_MEMORY: "80"

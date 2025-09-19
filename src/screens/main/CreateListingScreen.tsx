@@ -13,6 +13,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../contexts/AuthContext';
 import { RootStackParamList, Listing } from '../../types';
 import { CustomInput } from '../../components/common/CustomInput';
@@ -21,7 +22,6 @@ import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 import { PickerModal } from '../../components/common/PickerModal';
 import { ImagePicker } from '../../components/forms/ImagePicker';
 import { AmenitiesSelector } from '../../components/forms/AmenitiesSelector';
-import { mockColleges } from '../../utils/mockData';
 
 type CreateListingScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CreateListing'>;
 
@@ -41,7 +41,9 @@ interface ListingFormData {
   amenities: string[];
 }
 
-const LISTING_FEE = 25; // $25 to post a listing
+import { PRICING } from '../../config/stripe';
+
+const LISTING_FEE = PRICING.LISTING_FEE; // $100 to post a listing (matches Stripe product)
 
 const CreateListingScreen: React.FC = () => {
   const navigation = useNavigation<CreateListingScreenNavigationProp>();
@@ -135,11 +137,20 @@ const CreateListingScreen: React.FC = () => {
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    // Navigate to payment screen
-    navigation.navigate('Payment', {
-      listingId: 'new',
-      amount: LISTING_FEE,
-    });
+    try {
+      // Store listing data in AsyncStorage for use after payment
+      await AsyncStorage.setItem('pendingListingData', JSON.stringify(formData));
+      console.log('📝 Stored listing data for payment:', formData);
+      
+      // Navigate to payment screen
+      navigation.navigate('Payment', {
+        listingId: 'new',
+        amount: LISTING_FEE,
+      });
+    } catch (error) {
+      console.error('Error storing listing data:', error);
+      Alert.alert('Error', 'Failed to prepare listing data. Please try again.');
+    }
   };
 
   const handleGoBack = () => {
@@ -358,7 +369,28 @@ const CreateListingScreen: React.FC = () => {
       <PickerModal
         visible={showCollegePicker}
         title="Select College"
-        options={mockColleges}
+        options={[
+          'Harvard University',
+          'Massachusetts Institute of Technology',
+          'Stanford University',
+          'University of California, Berkeley',
+          'University of California, Los Angeles',
+          'University of Southern California',
+          'New York University',
+          'Columbia University',
+          'University of Pennsylvania',
+          'Yale University',
+          'Princeton University',
+          'Brown University',
+          'Cornell University',
+          'Dartmouth College',
+          'University of Chicago',
+          'Northwestern University',
+          'Duke University',
+          'Vanderbilt University',
+          'Emory University',
+          'Georgetown University'
+        ]}
         selectedValue={formData.college}
         onSelect={(value) => {
           updateFormData('college', value);

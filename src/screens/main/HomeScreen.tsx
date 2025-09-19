@@ -16,7 +16,7 @@ import { RootStackParamList, Listing } from '../../types';
 import { CustomButton } from '../../components/common/CustomButton';
 import { ListingCard } from '../../components/listings/ListingCard';
 import { SearchBar } from '../../components/common/SearchBar';
-import { mockListings } from '../../utils/mockData';
+import { PropertyService } from '../../services/PropertyService';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -34,10 +34,40 @@ const HomeScreen: React.FC = () => {
 
   const loadListings = async () => {
     try {
-      // TODO: Replace with actual API call
-      setListings(mockListings);
+      console.log('🏠 Loading all listings from Supabase...');
+      
+      // Load real listings from Supabase
+      const properties = await PropertyService.getAllProperties();
+      console.log('✅ Loaded', properties.length, 'listings for home screen');
+      
+      // Convert Property[] to Listing[] format
+      const allListings: Listing[] = properties.map(property => ({
+        id: property.id,
+        title: property.title,
+        description: property.description,
+        rent: property.rent,
+        bedrooms: property.bedrooms,
+        bathrooms: property.bathrooms,
+        address: property.address,
+        city: property.city,
+        state: property.state,
+        zipCode: property.zip_code,
+        college: '', // TODO: Add college name lookup
+        landlordId: property.landlord_id,
+        images: property.images,
+        amenities: property.amenities,
+        available: property.available,
+        availableDate: property.available_from,
+        featured: false, // Default value
+        createdAt: property.created_at,
+        updatedAt: property.updated_at,
+      }));
+      
+      setListings(allListings);
     } catch (error) {
-      console.error('Error loading listings:', error);
+      console.error('❌ Error loading listings:', error);
+      // Show empty state instead of fallback data
+      setListings([]);
     }
   };
 
