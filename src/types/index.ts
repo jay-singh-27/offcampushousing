@@ -24,14 +24,43 @@ export interface Listing {
   images: string[];
   amenities: string[];
   available: boolean;
-  availableDate: Date;
+  availableDate: string; // Changed from Date to string to match database format
   coordinates?: {
     latitude: number;
     longitude: number;
   };
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string; // Changed from Date to string to match database format
+  updatedAt: string; // Changed from Date to string to match database format
   featured: boolean;
+}
+
+// Property interface from Supabase
+export interface Property {
+  id: string;
+  title: string;
+  description: string;
+  rent: number;
+  bedrooms: number;
+  bathrooms: number;
+  address: string;
+  city: string;
+  state: string;
+  zip_code: string;
+  college_id?: string;
+  college?: string; // College name for display
+  landlord_id: string;
+  images: string[];
+  amenities: string[];
+  available: boolean;
+  available_from: string;
+  lease_term?: string;
+  utilities_included: boolean;
+  pets_allowed: boolean;
+  parking_included: boolean;
+  payment_intent_id?: string;
+  coordinates?: { latitude: number; longitude: number };
+  created_at: string;
+  updated_at: string;
 }
 
 export interface SearchFilters {

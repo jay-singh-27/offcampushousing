@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { Property } from '../types';
 
 export interface CreatePropertyRequest {
   title: string;
@@ -21,31 +22,6 @@ export interface CreatePropertyRequest {
   payment_intent_id?: string;
 }
 
-export interface Property {
-  id: string;
-  title: string;
-  description: string;
-  rent: number;
-  bedrooms: number;
-  bathrooms: number;
-  address: string;
-  city: string;
-  state: string;
-  zip_code: string;
-  college_id?: string;
-  landlord_id: string;
-  images: string[];
-  amenities: string[];
-  available: boolean;
-  available_from: string;
-  lease_term?: string;
-  utilities_included: boolean;
-  pets_allowed: boolean;
-  parking_included: boolean;
-  payment_intent_id?: string;
-  created_at: string;
-  updated_at: string;
-}
 
 export class PropertyService {
   static async createProperty(propertyData: CreatePropertyRequest): Promise<Property> {

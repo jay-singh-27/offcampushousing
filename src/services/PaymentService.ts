@@ -54,25 +54,7 @@ export class PaymentService {
 
       return response;
     } catch (error) {
-      console.error('Error creating payment intent:', error);
-      
-      // Fallback to mock for development if backend is not available
-      if (API_BASE_URL.includes('localhost') || API_BASE_URL.includes('your-backend')) {
-        console.warn('Using mock payment intent - backend not configured');
-        return new Promise((resolve) => {
-          setTimeout(() => {
-            const timestamp = Date.now();
-            resolve({
-              client_secret: `pi_${timestamp}_secret_${timestamp}mock`,
-              id: `pi_${timestamp}`,
-              amount: request.amount,
-              currency: request.currency,
-              status: 'requires_payment_method',
-            });
-          }, 500);
-        });
-      }
-      
+      console.error('❌ Error creating payment intent:', error);
       throw error;
     }
   }
@@ -92,18 +74,7 @@ export class PaymentService {
       
       return response;
     } catch (error) {
-      console.error('Error confirming payment:', error);
-      
-      // Fallback for development
-      if (API_BASE_URL.includes('localhost') || API_BASE_URL.includes('your-backend')) {
-        console.warn('Using mock payment confirmation - backend not configured');
-        return new Promise((resolve) => {
-          setTimeout(() => {
-            resolve({ success: true });
-          }, 500);
-        });
-      }
-      
+      console.error('❌ Error confirming payment:', error);
       throw error;
     }
   }

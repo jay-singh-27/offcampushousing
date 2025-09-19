@@ -14,7 +14,7 @@ A modern iOS app for off-campus housing, similar to JumpOffCampus.com, built wit
 
 ### For Landlords (Paid)
 - 🏠 Create and manage property listings
-- 💳 Stripe payment integration for listing fees ($25/listing)
+- 💳 Stripe payment integration for listing fees ($100/listing)
 - 📸 Upload multiple property photos
 - 🏷️ Add amenities and property details
 - 📊 View listing analytics
@@ -116,7 +116,7 @@ The app currently uses mock data for development. To integrate with a real backe
 
 1. Update API endpoints in `src/services/PaymentService.ts`
 2. Implement authentication API calls in `src/contexts/AuthContext.tsx`
-3. Replace mock data in `src/utils/mockData.ts` with actual API calls
+3. ✅ Integrated with Supabase database for real data
 
 ### Maps Configuration
 

@@ -22,7 +22,6 @@ import { LoadingOverlay } from '../../components/common/LoadingOverlay';
 import { PickerModal } from '../../components/common/PickerModal';
 import { ImagePicker } from '../../components/forms/ImagePicker';
 import { AmenitiesSelector } from '../../components/forms/AmenitiesSelector';
-import { mockColleges } from '../../utils/mockData';
 
 type CreateListingScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CreateListing'>;
 
@@ -370,7 +369,28 @@ const CreateListingScreen: React.FC = () => {
       <PickerModal
         visible={showCollegePicker}
         title="Select College"
-        options={mockColleges}
+        options={[
+          'Harvard University',
+          'Massachusetts Institute of Technology',
+          'Stanford University',
+          'University of California, Berkeley',
+          'University of California, Los Angeles',
+          'University of Southern California',
+          'New York University',
+          'Columbia University',
+          'University of Pennsylvania',
+          'Yale University',
+          'Princeton University',
+          'Brown University',
+          'Cornell University',
+          'Dartmouth College',
+          'University of Chicago',
+          'Northwestern University',
+          'Duke University',
+          'Vanderbilt University',
+          'Emory University',
+          'Georgetown University'
+        ]}
         selectedValue={formData.college}
         onSelect={(value) => {
           updateFormData('college', value);

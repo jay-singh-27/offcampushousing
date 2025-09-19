@@ -16,7 +16,6 @@ import { RootStackParamList, Listing } from '../../types';
 import { CustomButton } from '../../components/common/CustomButton';
 import { ListingCard } from '../../components/listings/ListingCard';
 import { SearchBar } from '../../components/common/SearchBar';
-import { mockListings } from '../../utils/mockData';
 import { PropertyService } from '../../services/PropertyService';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -67,9 +66,8 @@ const HomeScreen: React.FC = () => {
       setListings(allListings);
     } catch (error) {
       console.error('❌ Error loading listings:', error);
-      // Fallback to mock data if Supabase fails
-      console.log('📋 Falling back to mock data');
-      setListings(mockListings);
+      // Show empty state instead of fallback data
+      setListings([]);
     }
   };
 

@@ -16,7 +16,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { RootStackParamList, Listing } from '../../types';
 import { CustomButton } from '../../components/common/CustomButton';
 import { ListingCard } from '../../components/listings/ListingCard';
-import { mockListings } from '../../utils/mockData';
 import { PropertyService } from '../../services/PropertyService';
 
 type MyListingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;

@@ -1,4 +1,4 @@
-const express = require('express');
+ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -77,6 +77,44 @@ app.post('/api/webhooks/stripe', express.raw({type: 'application/json'}), async 
 
 // JSON middleware for all other routes
 app.use(express.json());
+
+// Auth callback endpoint for email confirmation
+app.get('/auth/callback', (req, res) => {
+  const { access_token, refresh_token, expires_in, token_type } = req.query;
+  
+  if (access_token) {
+    // Redirect to mobile app with tokens
+    const deepLinkUrl = `offcampushousing://auth/callback?access_token=${access_token}&refresh_token=${refresh_token}&expires_in=${expires_in}&token_type=${token_type}`;
+    
+    res.redirect(deepLinkUrl);
+  } else {
+    // Show a simple success page
+    res.send(`
+      <html>
+        <head>
+          <title>Email Confirmed</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
+            .container { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }
+            .success { color: #28a745; font-size: 48px; margin-bottom: 20px; }
+            h1 { color: #333; margin-bottom: 10px; }
+            p { color: #666; line-height: 1.6; }
+            .button { display: inline-block; background: #007AFF; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="success">✅</div>
+            <h1>Email Confirmed!</h1>
+            <p>Your email has been successfully confirmed. You can now return to the OffCampus Housing app and log in.</p>
+            <a href="offcampushousing://auth/confirmed" class="button">Open App</a>
+          </div>
+        </body>
+      </html>
+    `);
+  }
+});
 
 // Rate limiting
 const limiter = rateLimit({
