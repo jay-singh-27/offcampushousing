@@ -24,11 +24,11 @@ Go to your GitHub repository → Settings → Secrets and variables → Actions 
 
 | Secret Name | Description | Example |
 |-------------|-------------|---------|
-| `DIGITALOCEAN_ACCESS_TOKEN` | Your DOKS full access token | `dop_v1_your_token_here` |
+| `DIGITALOCEAN_ACCESS_TOKEN` | Your DOKS full access token | `dop_v1_xxxxxxxxxxxxxxxx` |
 | `CLUSTER_NAME` | Your DOKS cluster name | `offcampus-housing-cluster` |
 | `STRIPE_SECRET_KEY` | Your Stripe secret key | `sk_live_...` or `sk_test_...` |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook endpoint secret | `whsec_...` |
-| `SUPABASE_URL` | Your Supabase project URL | `https://aymygljcvqezjsifyndu.supabase.co` |
+| `SUPABASE_URL` | Your Supabase project URL | `https://your-project.supabase.co` |
 | `SUPABASE_SERVICE_KEY` | Supabase service role key | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` |
 
 ## 🏗️ Architecture Overview
@@ -72,7 +72,7 @@ curl -sL https://github.com/digitalocean/doctl/releases/download/v1.104.0/doctl-
 sudo mv doctl /usr/local/bin
 
 # Authenticate
-doctl auth init -t YOUR_DIGITALOCEAN_TOKEN
+doctl auth init -t YOUR_DO_TOKEN
 
 # Connect to cluster
 doctl kubernetes cluster kubeconfig save offcampus-housing-cluster

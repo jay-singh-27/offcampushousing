@@ -43,7 +43,8 @@
       "supabaseUrl": "https://aymygljcvqezjsifyndu.supabase.co",
       "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5bXlnbGpjdnFlempzaWZ5bmR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc4ODg0NDYsImV4cCI6MjA3MzQ2NDQ0Nn0.Mg3tXdcM9T15X-VvO0Md2Ng_vLJ8uES_rC7ROYeWwas",
       "stripePublishableKey": "pk_test_51S7OVqQhXTbDcQGVS2aMdeHnSOTydJNeFVtfE5uYhA6DiAsn3cDbven8BKakVl6uWR7KC5vVulhTunRNtPV8RvnA00H6geHEvM",
-      "backendUrl": "http://localhost:3000/api"
+      "backendUrl": "https://api.offcampushousing.app/api",
+      "environment": "production"
     }
   }
 }
