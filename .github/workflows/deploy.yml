@@ -2,7 +2,7 @@ name: Deploy to DOKS
 
 on:
   push:
-    branches: [ main, feature/deploy ]
+    branches: [ main, feature/deploy, develop ]
     paths:
       - 'backend/**'
       - 'k8s/**'
@@ -13,6 +13,20 @@ on:
       - 'backend/**'
       - 'k8s/**'
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'test'
+        type: choice
+        options:
+        - test
+        - prod
+      force_deploy:
+        description: 'Force deployment even if no changes detected'
+        required: false
+        default: false
+        type: boolean
 
 env:
   REGISTRY: registry.digitalocean.com
@@ -26,6 +40,36 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Determine environment
+      id: env
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          ENVIRONMENT="${{ github.event.inputs.environment }}"
+        elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          ENVIRONMENT="prod"
+        elif [ "${{ github.ref }}" = "refs/heads/develop" ]; then
+          ENVIRONMENT="test"
+        else
+          ENVIRONMENT="test"
+        fi
+        
+        echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+        echo "namespace=offcampus-housing-$ENVIRONMENT" >> $GITHUB_OUTPUT
+        
+        # Set environment-specific configurations
+        if [ "$ENVIRONMENT" = "prod" ]; then
+          echo "cluster_name=${{ secrets.CLUSTER_NAME_PROD }}" >> $GITHUB_OUTPUT
+          echo "domain=api.offcampushousing.app" >> $GITHUB_OUTPUT
+          echo "replicas=3" >> $GITHUB_OUTPUT
+        else
+          echo "cluster_name=${{ secrets.CLUSTER_NAME_TEST }}" >> $GITHUB_OUTPUT
+          echo "domain=api-test.offcampushousing.app" >> $GITHUB_OUTPUT
+          echo "replicas=1" >> $GITHUB_OUTPUT
+        fi
+        
+        echo "Deploying to environment: $ENVIRONMENT"
+        echo "Namespace: offcampus-housing-$ENVIRONMENT"
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -45,6 +89,7 @@ jobs:
         push: true
         tags: |
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.env.outputs.environment }}-latest
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
@@ -52,65 +97,144 @@ jobs:
 
     - name: Save DigitalOcean kubeconfig
       run: |
-        doctl kubernetes cluster kubeconfig save --expiry-seconds 600 ${{ secrets.CLUSTER_NAME }}
+        doctl kubernetes cluster kubeconfig save --expiry-seconds 600 ${{ steps.env.outputs.cluster_name }}
+
+    - name: Create environment-specific manifests
+      run: |
+        ENVIRONMENT="${{ steps.env.outputs.environment }}"
+        NAMESPACE="${{ steps.env.outputs.namespace }}"
+        DOMAIN="${{ steps.env.outputs.domain }}"
+        REPLICAS="${{ steps.env.outputs.replicas }}"
+        
+        # Create environment-specific directory
+        mkdir -p k8s-env
+        
+        # Copy and modify namespace
+        sed "s/name: offcampus-housing/name: $NAMESPACE/" k8s/namespace.yaml > k8s-env/namespace.yaml
+        sed -i "s/environment: production/environment: $ENVIRONMENT/" k8s-env/namespace.yaml
+        
+        # Copy and modify service
+        sed "s/namespace: offcampus-housing/namespace: $NAMESPACE/" k8s/service.yaml > k8s-env/service.yaml
+        
+        # Copy and modify network policy
+        sed "s/namespace: offcampus-housing/namespace: $NAMESPACE/" k8s/networkpolicy.yaml > k8s-env/networkpolicy.yaml
+        
+        # Copy and modify deployment
+        sed "s/namespace: offcampus-housing/namespace: $NAMESPACE/" k8s/deployment.yaml > k8s-env/deployment.yaml
+        sed -i "s/replicas: 2/replicas: $REPLICAS/" k8s-env/deployment.yaml
+        
+        # Copy and modify HPA
+        sed "s/namespace: offcampus-housing/namespace: $NAMESPACE/" k8s/hpa.yaml > k8s-env/hpa.yaml
+        
+        # Copy and modify ingress
+        sed "s/namespace: offcampus-housing/namespace: $NAMESPACE/" k8s/ingress.yaml > k8s-env/ingress.yaml
+        sed -i "s/api.offcampushousing.app/$DOMAIN/g" k8s-env/ingress.yaml
+        sed -i "s/secretName: offcampus-housing-tls/secretName: offcampus-housing-$ENVIRONMENT-tls/" k8s-env/ingress.yaml
 
     - name: Deploy to Kubernetes
       run: |
-        # Apply namespace first
-        kubectl apply -f k8s/namespace.yaml
+        ENVIRONMENT="${{ steps.env.outputs.environment }}"
+        NAMESPACE="${{ steps.env.outputs.namespace }}"
         
-        # Create/update secrets
-        kubectl create secret generic offcampus-housing-secrets \
-          --namespace=offcampus-housing \
-          --from-literal=STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
-          --from-literal=STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
-          --from-literal=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
-          --from-literal=SUPABASE_SERVICE_KEY="${{ secrets.SUPABASE_SERVICE_KEY }}" \
-          --from-literal=NODE_ENV="production" \
-          --from-literal=PORT="3000" \
-          --dry-run=client -o yaml | kubectl apply -f -
+        # Apply namespace first
+        kubectl apply -f k8s-env/namespace.yaml
+        
+        # Create/update secrets with environment-specific values
+        if [ "$ENVIRONMENT" = "prod" ]; then
+          kubectl create secret generic offcampus-housing-secrets \
+            --namespace=$NAMESPACE \
+            --from-literal=STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY_PROD }}" \
+            --from-literal=STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET_PROD }}" \
+            --from-literal=SUPABASE_URL="${{ secrets.SUPABASE_URL_PROD }}" \
+            --from-literal=SUPABASE_SERVICE_KEY="${{ secrets.SUPABASE_SERVICE_KEY_PROD }}" \
+            --from-literal=NODE_ENV="production" \
+            --from-literal=PORT="3000" \
+            --dry-run=client -o yaml | kubectl apply -f -
+        else
+          kubectl create secret generic offcampus-housing-secrets \
+            --namespace=$NAMESPACE \
+            --from-literal=STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY_TEST }}" \
+            --from-literal=STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET_TEST }}" \
+            --from-literal=SUPABASE_URL="${{ secrets.SUPABASE_URL_TEST }}" \
+            --from-literal=SUPABASE_SERVICE_KEY="${{ secrets.SUPABASE_SERVICE_KEY_TEST }}" \
+            --from-literal=NODE_ENV="development" \
+            --from-literal=PORT="3000" \
+            --dry-run=client -o yaml | kubectl apply -f -
+        fi
         
         # Apply all other manifests
-        kubectl apply -f k8s/service.yaml
-        kubectl apply -f k8s/networkpolicy.yaml
-        kubectl apply -f k8s/deployment.yaml
-        kubectl apply -f k8s/hpa.yaml
-        kubectl apply -f k8s/ingress.yaml
+        kubectl apply -f k8s-env/service.yaml
+        kubectl apply -f k8s-env/networkpolicy.yaml
+        kubectl apply -f k8s-env/deployment.yaml
+        kubectl apply -f k8s-env/hpa.yaml
+        kubectl apply -f k8s-env/ingress.yaml
         
         # Update the image
         kubectl set image deployment/offcampus-housing-backend \
           backend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-          --namespace=offcampus-housing
+          --namespace=$NAMESPACE
         
         # Wait for rollout to complete
         kubectl rollout status deployment/offcampus-housing-backend \
-          --namespace=offcampus-housing \
+          --namespace=$NAMESPACE \
           --timeout=600s
 
     - name: Verify deployment
       run: |
+        NAMESPACE="${{ steps.env.outputs.namespace }}"
+        ENVIRONMENT="${{ steps.env.outputs.environment }}"
+        DOMAIN="${{ steps.env.outputs.domain }}"
+        
+        echo "=== Deployment Summary ==="
+        echo "Environment: $ENVIRONMENT"
+        echo "Namespace: $NAMESPACE"
+        echo "Domain: $DOMAIN"
+        echo ""
+        
         echo "=== Services ==="
-        kubectl get services --namespace=offcampus-housing
+        kubectl get services --namespace=$NAMESPACE
         echo "=== Pods ==="
-        kubectl get pods --namespace=offcampus-housing
+        kubectl get pods --namespace=$NAMESPACE
         echo "=== Ingress ==="
-        kubectl get ingress --namespace=offcampus-housing
+        kubectl get ingress --namespace=$NAMESPACE
+        echo "=== HPA ==="
+        kubectl get hpa --namespace=$NAMESPACE
         echo "=== Pod Logs ==="
-        kubectl logs -l app=offcampus-housing-backend --namespace=offcampus-housing --tail=20
+        kubectl logs -l app=offcampus-housing-backend --namespace=$NAMESPACE --tail=20
 
     - name: Run health check
       run: |
+        NAMESPACE="${{ steps.env.outputs.namespace }}"
+        DOMAIN="${{ steps.env.outputs.domain }}"
+        
         # Wait a bit for the service to be ready
         sleep 30
         
-        # Get the external IP
-        EXTERNAL_IP=$(kubectl get service offcampus-housing-backend-service --namespace=offcampus-housing -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-        if [ ! -z "$EXTERNAL_IP" ]; then
-          echo "Testing health endpoint at $EXTERNAL_IP"
-          curl -f http://$EXTERNAL_IP/health || echo "Health check failed, but deployment may still be successful"
+        # Try health check via ingress first (if available)
+        if curl -f -s --connect-timeout 10 https://$DOMAIN/health > /dev/null 2>&1; then
+          echo "✅ Health check passed via HTTPS: https://$DOMAIN/health"
+          curl -s https://$DOMAIN/health | jq '.' || curl -s https://$DOMAIN/health
+        elif curl -f -s --connect-timeout 10 http://$DOMAIN/health > /dev/null 2>&1; then
+          echo "✅ Health check passed via HTTP: http://$DOMAIN/health"
+          curl -s http://$DOMAIN/health | jq '.' || curl -s http://$DOMAIN/health
         else
-          echo "No external IP found yet, checking pod health instead"
-          kubectl get pods --namespace=offcampus-housing
+          echo "⚠️  Health check via domain failed, trying direct service IP..."
+          
+          # Get the external IP
+          EXTERNAL_IP=$(kubectl get service offcampus-housing-backend-service --namespace=$NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          if [ ! -z "$EXTERNAL_IP" ]; then
+            echo "Testing health endpoint at $EXTERNAL_IP"
+            if curl -f -s --connect-timeout 10 http://$EXTERNAL_IP/health > /dev/null 2>&1; then
+              echo "✅ Health check passed via service IP: http://$EXTERNAL_IP/health"
+              curl -s http://$EXTERNAL_IP/health | jq '.' || curl -s http://$EXTERNAL_IP/health
+            else
+              echo "❌ Health check failed via service IP"
+            fi
+          else
+            echo "No external IP found yet, checking pod health instead"
+            kubectl get pods --namespace=$NAMESPACE
+            kubectl describe pods -l app=offcampus-housing-backend --namespace=$NAMESPACE
+          fi
         fi
 
   test-build:
